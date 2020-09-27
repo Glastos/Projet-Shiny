@@ -1,0 +1,48 @@
+---
+title: "Netflex"
+subtitle: "A Netflix data analysis flexboard"
+author:  "Guilhem Huau | Amelie Robinet | Ibrahima Sow"
+institute: "Institut Agro"
+date: "`r format(Sys.time(), '%Y/%m/%d')`"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    theme: united
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+suppressPackageStartupMessages({
+  library(flexdashboard)
+})
+```
+
+
+Home
+=======================================================================
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### **Presentation of the project**
+
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+
+```
+
+Page B
+=======================================================================
