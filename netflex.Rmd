@@ -10,6 +10,7 @@ output:
     favicon: "src/16px-Netflix_icon.png"
     logo: "src/48px-Netflix_icon.png"
     theme: united
+    # css: "src/netflix-css.css" Need to take the basic template from flexdashboard and change it
 runtime: shiny
 ---
 
@@ -34,17 +35,20 @@ Column {data-width=650}
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Chart B
+### Metrics
 
 ```{r}
 
 ```
 
-### Chart C
+### Links
 
 ```{r}
 
 ```
 
-Page B
+Graph 1
+=======================================================================
+
+Graph 2
 =======================================================================
