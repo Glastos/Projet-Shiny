@@ -10,6 +10,7 @@ output:
     favicon: "src/16px-Netflix_icon.png"
     logo: "src/48px-Netflix_icon.png"
     theme: united
+    source: embed
     # css: "src/netflix-css.css" Need to take the basic template from flexdashboard and change it
 runtime: shiny
 ---
@@ -30,6 +31,30 @@ Column {data-width=650}
 
 ### **Presentation of the project**
 
+#### Intro
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+
+#### Amazing title
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+$E=q*u+a-t/i\neq\sigma<n$
+
+#### Amazing people !!!
+
+||
+
+||
+
+\\/
+
+*VOUS*
+
 
 
 Column {data-width=350}
@@ -38,13 +63,13 @@ Column {data-width=350}
 ### Metrics
 
 ```{r}
-
+plot(1, type="n", xlab="", ylab="", xlim=c(0, 10), ylim=c(0, 10))
 ```
 
 ### Links
 
 ```{r}
-
+plot(1, type="n", xlab="", ylab="", xlim=c(0, 10), ylim=c(0, 10))
 ```
 
 Graph 1
