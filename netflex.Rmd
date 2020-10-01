@@ -90,6 +90,17 @@ plot(1, type="n", xlab="", ylab="", xlim=c(0, 10), ylim=c(0, 10))
 Graph 1
 =======================================================================
 
+Column {data-width=150}
+-----------------------------------------------------------------------
+
+```{r echo=FALSE}
+radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4))
+```
+
+
+Column {data-width=850}
+-----------------------------------------------------------------------
+
 ```{r echo=FALSE}
 output$dygraph_1 <- renderDygraph({
 
@@ -108,7 +119,13 @@ output$dygraph_1 <- renderDygraph({
     })
 
 
-dygraphOutput("dygraph_1")
+output$graph1 <- renderUI({
+  if (input$time_range_1 == 1) {
+    dygraphOutput("dygraph_1")
+  } else {}
+})
+
+uiOutput("graph1")
 ```
 
 
