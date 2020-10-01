@@ -18,8 +18,23 @@ runtime: shiny
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 suppressPackageStartupMessages({
+  library(shiny)
   library(flexdashboard)
+  library(dygraphs)
+  library(dplyr)
+  library(tidyr)
+  library(magrittr)
+  library(xts)
 })
+```
+
+
+```{r global, include=FALSE}
+dat <- read.csv("sow.csv")
+dat$show_type[is.na(dat$show_type)] <- 'undefined'
+
+
+
 ```
 
 
@@ -74,6 +89,28 @@ plot(1, type="n", xlab="", ylab="", xlim=c(0, 10), ylim=c(0, 10))
 
 Graph 1
 =======================================================================
+
+```{r echo=FALSE}
+output$dygraph_1 <- renderDygraph({
+
+        dat$show_type[is.na(dat$show_type)] <- 'undefined'
+        
+        dat_d <- dat[,c("show_type", "Start.Time")] %>%
+            mutate(Date = as.Date(Start.Time))%>%
+            group_by(Date, show_type)%>%
+            tally()%>%
+            pivot_wider(names_from = show_type, values_from = n)%>%
+            mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
+        dat_t <-  xts(dat_d[2:4], dat_d$Date)
+        dygraph(dat_t)%>% 
+            dyRangeSelector(dateWindow = c(min(dat$Start.Time), max(dat$Start.Time)))
+        
+    })
+
+
+dygraphOutput("dygraph_1")
+```
+
 
 Graph 2
 =======================================================================
