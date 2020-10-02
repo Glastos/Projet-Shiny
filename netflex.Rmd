@@ -11,6 +11,7 @@ output:
     logo: "src/48px-Netflix_icon.png"
     theme: united
     source: embed
+    vertical_layout: scroll
     # css: "src/netflix-css.css" Need to take the basic template from flexdashboard and change it
 runtime: shiny
 ---
@@ -40,8 +41,17 @@ dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
 ```
 
 
-Home
+Home {data-orientation=rows}
 =======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+Lorem ipsun dolor sit amet,....
+
+Row
+-----------------------------------------------------------------------
+
 
 Column {data-width=650}
 -----------------------------------------------------------------------
