@@ -25,6 +25,8 @@ suppressPackageStartupMessages({
   library(tidyr)
   library(magrittr)
   library(xts)
+  library(plotly)
+  library(viridis)
 })
 ```
 
@@ -102,10 +104,9 @@ Column {data-width=850}
 -----------------------------------------------------------------------
 
 ```{r echo=FALSE}
+
 output$dygraph_1 <- renderDygraph({
 
-        dat$show_type[is.na(dat$show_type)] <- 'undefined'
-        
         dat_d <- dat[,c("show_type", "Start.Time")] %>%
             mutate(Date = as.Date(Start.Time))%>%
             group_by(Date, show_type)%>%
@@ -115,18 +116,55 @@ output$dygraph_1 <- renderDygraph({
         dat_t <-  xts(dat_d[2:4], dat_d$Date)
         dygraph(dat_t)%>% 
             dyRangeSelector(dateWindow = c(min(dat$Start.Time), max(dat$Start.Time)))
-        
     })
+
+output$dygraph_2 <- renderPlotly({
+
+        dat_d <- dat[,c("show_type", "Month")] %>%
+            group_by(Month, show_type)%>%
+            tally()%>%
+            pivot_wider(names_from = show_type, values_from = n)%>%
+            mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
+        dat_d$Month <- factor(dat_d$Month, levels = month.name)
+        plot_ly(dat_d, x = ~Month, y = ~movie, name = "Movies", type = "bar")%>%
+          add_trace(y = ~series, name = 'Series')%>%
+          add_trace(y = ~undefined, name = 'Undefined')%>%
+          layout(yaxis = list(title = 'Count'), barmode = 'group', colors = viridis_pal(option = "D")(3))
+    })
+
+output$dygraph_3 <- renderPlotly({
+
+        dat_d <- dat[,c("show_type", "Day")] %>%
+            group_by(Day, show_type)%>%
+            tally()%>%
+            pivot_wider(names_from = show_type, values_from = n)%>%
+            mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
+        dat_d$Day <- factor(dat_d$Day, levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
+        plot_ly(dat_d, x = ~Day, y = ~movie, name = "Movies", type = "bar")%>%
+          add_trace(y = ~series, name = 'Series')%>%
+          add_trace(y = ~undefined, name = 'Undefined')%>%
+          layout(yaxis = list(title = 'Count'), barmode = 'group', colors = viridis_pal(option = "D")(3))
+    })
+
+
+
 
 
 output$graph1 <- renderUI({
   if (input$time_range_1 == 1) {
     dygraphOutput("dygraph_1")
-  } else {}
+  } else if (input$time_range_1 == 2) {
+        plotlyOutput("dygraph_2")
+  } else if (input$time_range_1 == 3) {
+        dygraphOutput("dygraph_3")
+  } else {
+        dygraphOutput("dygraph_4")
+  }
 })
 
 uiOutput("graph1")
 ```
+
 
 
 Graph 2
