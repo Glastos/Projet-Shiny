@@ -28,6 +28,7 @@ suppressPackageStartupMessages({
   library(xts)
   library(plotly)
   library(viridis)
+  library(wordcloud)
 })
 ```
 
@@ -36,8 +37,18 @@ suppressPackageStartupMessages({
 dat <- read.csv("netflex.csv")
 dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
 
+genre <- paste(unlist(dat$Genre), collapse=' ')%>%
+  strsplit(" ")%>%
+  unlist()%>%
+  sub(",$",  "", .)%>%
+  table()%>%
+  as.data.frame()
 
-
+names(genre) <- c("Genre", "N")
+  
+wordcloud(words = as.character(genre$Genre), freq = genre$N, min.freq = 1,
+          max.words=25, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
 ```
 
 
@@ -87,10 +98,12 @@ $E=q*u+a-t/i\neq\sigma<n$
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Metrics
+### Genres
 
 ```{r}
-plot(1, type="n", xlab="", ylab="", xlim=c(0, 10), ylim=c(0, 10))
+wordcloud(words = as.character(genre$Genre), freq = genre$N, min.freq = 1,
+          max.words=25, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
 ```
 
 ### Links
