@@ -32,8 +32,8 @@ suppressPackageStartupMessages({
 
 
 ```{r global, include=FALSE}
-dat <- read.csv("sow.csv")
-dat$show_type[is.na(dat$show_type)] <- 'undefined'
+dat <- read.csv("netflex.csv")
+dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
 
 
 
@@ -107,23 +107,23 @@ Column {data-width=850}
 
 output$dygraphAllTime <- renderDygraph({
 
-        dat_d <- dat[,c("show_type", "Start.Time")] %>%
-            mutate(Date = as.Date(Start.Time))%>%
-            group_by(Date, show_type)%>%
+        dat_d <- dat[,c("Show_type", "Start_time")] %>%
+            mutate(Date = as.Date(Start_time))%>%
+            group_by(Date, Show_type)%>%
             tally()%>%
-            pivot_wider(names_from = show_type, values_from = n)%>%
+            pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
         dat_t <-  xts(dat_d[2:4], dat_d$Date)
         dygraph(dat_t)%>% 
-            dyRangeSelector(dateWindow = c(min(dat$Start.Time), max(dat$Start.Time)))
+            dyRangeSelector(dateWindow = c(min(dat$Start_time), max(dat$Start_time)))
     })
 
 output$plotYearly <- renderPlotly({
 
-        dat_d <- dat[,c("show_type", "Month")] %>%
-            group_by(Month, show_type)%>%
+        dat_d <- dat[,c("Show_type", "Month")] %>%
+            group_by(Month, Show_type)%>%
             tally()%>%
-            pivot_wider(names_from = show_type, values_from = n)%>%
+            pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
         dat_d$Month <- factor(dat_d$Month, levels = month.name)
         plot_ly(dat_d, x = ~Month, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
@@ -134,10 +134,10 @@ output$plotYearly <- renderPlotly({
 
 output$plotWeekly <- renderPlotly({
 
-        dat_d <- dat[,c("show_type", "Day")] %>%
-            group_by(Day, show_type)%>%
+        dat_d <- dat[,c("Show_type", "Day")] %>%
+            group_by(Day, Show_type)%>%
             tally()%>%
-            pivot_wider(names_from = show_type, values_from = n)%>%
+            pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
         dat_d$Day <- factor(dat_d$Day, levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
         plot_ly(dat_d, x = ~Day, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
@@ -149,10 +149,10 @@ output$plotWeekly <- renderPlotly({
 
 output$plotHourly <- renderPlotly({
 
-        dat_d <- dat[,c("show_type", "Hours")] %>%
-            group_by(Hours, show_type)%>%
+        dat_d <- dat[,c("Show_type", "Hours")] %>%
+            group_by(Hours, Show_type)%>%
             tally()%>%
-            pivot_wider(names_from = show_type, values_from = n)%>%
+            pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
         
         plot_ly(dat_d, x = ~Hours, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
@@ -171,9 +171,9 @@ output$graph1 <- renderUI({
   } else if (input$time_range_1 == 2) {
         plotlyOutput("plotYearly")
   } else if (input$time_range_1 == 3) {
-        dygraphOutput("plotWeekly")
+        plotlyOutput("plotWeekly")
   } else {
-        dygraphOutput("plotHourly")
+        plotlyOutput("plotHourly")
   }
 })
 
@@ -184,3 +184,4 @@ uiOutput("graph1")
 
 Graph 2
 =======================================================================
+
