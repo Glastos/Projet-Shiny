@@ -1,131 +1,143 @@
 ---
-title: "Netflex"
-subtitle: "A Netflix data analysis flexboard"
-author:  "Guilhem Huau | Amelie Robinet | Ibrahima Sow"
-institute: "Institut Agro"
-date: "`r format(Sys.time(), '%Y/%m/%d')`"
+title: "NETFLEX"
+runtime: shiny
 output:
   flexdashboard::flex_dashboard:
-    orientation: columns
-    favicon: "src/16px-Netflix_icon.png"
-    logo: "src/48px-Netflix_icon.png"
-    theme: united
-    source: embed
-    vertical_layout: scroll
-    # css: "src/netflix-css.css" Need to take the basic template from flexdashboard and change it
-runtime: shiny
+    favicon: "flavicon.jpeg"
+    logo: 
+    source_code: embed
+    theme: spacelab
+    css: bootstrap.css
+    social: [ "github","menu" ]
+    vertical_layout: fill
 ---
-
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-suppressPackageStartupMessages({
-  library(shiny)
-  library(flexdashboard)
-  library(dygraphs)
-  library(dplyr)
-  library(tidyr)
-  library(magrittr)
-  library(xts)
-  library(plotly)
-  library(viridis)
-  library(wordcloud)
+library(shiny)
+library(shinythemes)
+library(shinydashboard)
+library(shinydashboardPlus)
+library(shinyjs)
+library(shinyBS)
+library(shinyLP)
+library(shinycssloaders)
+library(shinybusy)
+library(shinyjs)
+library(flexdashboard)
+library(leaflet)
+library(viridis)
+library(shinyWidgets)
+library(waiter)
+library(hrbrthemes)
+library(htmltools)
+library(tidyverse)
+library(readxl)
+library(FactoMineR)
+library(factoextra)
+library(GGally)
+library(randomForest)
+library(corrplot)
+library(gganimate)
+library(rgdal)
+library(sp)
+library(rgeos)
+library(scales)
+library(caret)
+library(e1071)
+library(data.table)
+library(DT)
+library(dygraphs)
+library(plotly)
+library(xts)
+library(magrittr)
+```
+
+
+```{r global, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+dat <- read.csv("netflex3.csv")
+countriesborders <- readOGR("TM_WORLD_BORDERS_SIMPL-0.3.shp")
+dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
+```
+
+
+#  Home Page {data-orientation=rows}     
+Row 
+-------------------------------------
+
+```{r}
+tags$img(
+     src = "bckgrnd0.jpeg",
+     style = 'position: fixed'
+   )
+```
+
+### ValBox {data-height=800}
+```{r}
+fixedPage(
+  
+jumbotron("Welcome to NETFLEX", "Please call attention to important application features", button =  "True", button_Label = "See Documentation")
+
+)
+```
+
+
+Row {data-height=150}
+-------------------------------------
+
+Row 
+-------------------------------------
+```{r}
+
+
+```
+
+### Profiles
+```{r}
+renderValueBox({
+
+valueBox(tags$p(length(unique(dat$Profile)),
+                style = "font-size: 200%; color:	#FFFFFF;"), tags$q("Netflix Profiles",style = "font-size:                   150%; color:	#FFFFFF;") ,  color = "green", icon ="fa-users")
+})
+
+```
+
+
+### Movies seen
+```{r}
+renderValueBox({
+
+
+valueBox(tags$p(table(dat$Show_type=="movie")[2],
+                style = "font-size: 200%; color:	#FFFFFF;"), tags$q("Movies seen",style = "font-size:                   150%; color:	#FFFFFF;") ,  color = "orange", icon ="fa-video")
 })
 ```
 
-
-```{r global, include=FALSE}
-dat <- read.csv("netflex.csv")
-dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
-
-genre <- paste(unlist(dat$Genre), collapse=' ')%>%
-  strsplit(" ")%>%
-  unlist()%>%
-  sub(",$",  "", .)%>%
-  table()%>%
-  as.data.frame()
-
-names(genre) <- c("Genre", "N")
-  
-wordcloud(words = as.character(genre$Genre), freq = genre$N, min.freq = 1,
-          max.words=25, random.order=FALSE, rot.per=0.35, 
-          colors=brewer.pal(8, "Dark2"))
+### Series seen
+```{r}
+renderValueBox({
+valueBox(tags$p(table(dat$Show_type=="series")[2],
+                style = "font-size: 200%; color:	#FFFFFF;"), tags$q("Series seen",style = "font-size:                   150%; color:	#FFFFFF;") ,  color = "red", icon ="fa-film")
+})
 ```
-
-
-Home {data-orientation=rows}
-=======================================================================
 
 Row
------------------------------------------------------------------------
-
-Lorem ipsun dolor sit amet,....
-
-Row
------------------------------------------------------------------------
-
-
-Column {data-width=650}
------------------------------------------------------------------------
-
-### **Presentation of the project**
-
-#### Intro
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-
-#### Amazing title
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-$E=q*u+a-t/i\neq\sigma<n$
-
-#### Amazing people !!!
-
-||
-
-||
-
-\\/
-
-*VOUS*
-
-
-
-Column {data-width=350}
------------------------------------------------------------------------
-
-### Genres
-
+-------------------------------------
 ```{r}
-wordcloud(words = as.character(genre$Genre), freq = genre$N, min.freq = 1,
-          max.words=25, random.order=FALSE, rot.per=0.35, 
-          colors=brewer.pal(8, "Dark2"))
+
 ```
 
-### Links
+# Explanatory visualization {data-orientation=rows}
 
-```{r}
-plot(1, type="n", xlab="", ylab="", xlim=c(0, 10), ylim=c(0, 10))
-```
-
-Graph 1
-=======================================================================
-
-Column {data-width=150}
------------------------------------------------------------------------
+## Input {.sidebar}
 
 ```{r echo=FALSE}
 radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4))
+# selectInput("profile", "Choose profile",
+#             choices = c(dat$Profile))
 ```
 
 
-Column {data-width=850}
------------------------------------------------------------------------
-
+## Column {.tabset}
+### Global
 ```{r echo=FALSE}
 
 output$dygraphAllTime <- renderDygraph({
@@ -137,7 +149,7 @@ output$dygraphAllTime <- renderDygraph({
             pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
         dat_t <-  xts(dat_d[2:4], dat_d$Date)
-        dygraph(dat_t)%>% 
+        dygraph(dat_t)%>%
             dyRangeSelector(dateWindow = c(min(dat$Start_time), max(dat$Start_time)))
     })
 
@@ -177,7 +189,7 @@ output$plotHourly <- renderPlotly({
             tally()%>%
             pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
-        
+
         plot_ly(dat_d, x = ~Hours, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
           add_trace(y = ~series, name = 'Series')%>%
           add_trace(y = ~undefined, name = 'Undefined')%>%
@@ -203,8 +215,61 @@ output$graph1 <- renderUI({
 uiOutput("graph1")
 ```
 
+### Profile
+```{r}
+bar <- ggplot(dat)+
+  geom_bar(mapping = aes(x = Profile, fill = Profile)) + theme_bw()
+bar + coord_polar()
+```
+
+# Analysis {data-orientation=rows}
+
+##Input {.sidebar}
+
+```{r echo=FALSE}
+radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4))
+```
+
+Row {.tabset}
+-------------------------------------
+### 1ghjk
+```{r}
+
+```
+
+### 1ghjk
+```{r}
+
+```
+
+### 1ghjk
+```{r}
+
+```
 
 
-Graph 2
-=======================================================================
+# Data source
+```{r}
+tags$style(HTML("
+                    .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+                    color: #000000; }
+
+                    .dataTables_wrapper .dataTables_paginate .paginate_button{box-sizing:border-box;display:inline-block;min-width:1.5em;padding:0.5em 1em;margin-left:2px;text-align:center;text-decoration:none !important;cursor:pointer;*cursor:hand;color:#ffffff !important;border:1px solid transparent;border-radius:2px}
+
+                    .dataTables_length select {
+                           color: #ffffff;
+                           background-color: #ffffff
+                           }
+                    .dataTables_filter input {
+                            color: #ffffff;
+                            background-color: #ffffff}thead {
+                    color: #ffffff;
+                    }tbody {
+                    color: #000000;
+                    }"))
+
+renderDataTable({DT::datatable(dat[,-1], options = list(scrollX = TRUE,
+                 sScrollY = '75vh', scrollCollapse = TRUE), extensions = list("Scroller"))})
+```
+
 
