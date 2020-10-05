@@ -53,9 +53,34 @@ library(magrittr)
 
 
 ```{r global, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-dat <- read.csv("netflex3.csv")
-countriesborders <- readOGR("TM_WORLD_BORDERS_SIMPL-0.3.shp")
+dat <- read.csv("src/data/netflex3.csv")
+countriesborders <- readOGR("/srcTM_WORLD_BORDERS_SIMPL-0.3.shp")
 dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
+
+genre <- paste(unlist(dat$Genre), collapse=' ')%>%
+  strsplit(" ")%>%
+  unlist()%>%
+  sub(",$",  "", .)%>%
+  table()%>%
+  as.data.frame()
+
+names(genre) <- c("Genre", "N")
+  
+# 
+# genre2 <- dat[,c("Profile", "Genre")]%>%
+#   group_by(Profile)%>%
+#   mutate_at("Genre", unlist)%>%
+#   mutate_at("Genre", paste, collapse = ' ')
+#   mutate_at("Genre", strsplit," ")%>%
+#   mutate_at("Genre", unlist)%>%
+#   mutate_at("Genre", ~sub(",$",  "", .))
+#   mutate_at("Genre", tally)
+  
+  
+wordcloud(words = as.character(genre$Genre), freq = genre$N, min.freq = 1,
+          max.words=25, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
 ```
 
 
