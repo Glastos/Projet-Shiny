@@ -9,9 +9,10 @@ output:
     theme: spacelab
     css: bootstrap.css
     social: [ "github","menu" ]
-    vertical_layout: fill
+    vertical_layout: scroll
 ---
 ```{r setup, include=FALSE}
+suppressPackageStartupMessages({
 library(shiny)
 library(shinythemes)
 library(shinydashboard)
@@ -29,7 +30,6 @@ library(shinyWidgets)
 library(waiter)
 library(hrbrthemes)
 library(htmltools)
-library(tidyverse)
 library(readxl)
 library(FactoMineR)
 library(factoextra)
@@ -48,33 +48,28 @@ library(DT)
 library(dygraphs)
 library(plotly)
 library(xts)
+library(tidyr)
+library(dplyr)
 library(magrittr)
+library(wordcloud)
+})
 ```
 
 
 ```{r global, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 dat <- read.csv("src/data/netflex3.csv")
-countriesborders <- readOGR("/srcTM_WORLD_BORDERS_SIMPL-0.3.shp")
+# countriesborders <- readOGR("/src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
 dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
+dat$Genre[is.na(dat$Genre)] <- 'undefined'
 
 genre <- paste(unlist(dat$Genre), collapse=' ')%>%
   strsplit(" ")%>%
   unlist()%>%
   sub(",$",  "", .)%>%
-  table()%>%
-  as.data.frame()
+  unique()
 
-names(genre) <- c("Genre", "N")
-  
-# 
-# genre2 <- dat[,c("Profile", "Genre")]%>%
-#   group_by(Profile)%>%
-#   mutate_at("Genre", unlist)%>%
-#   mutate_at("Genre", paste, collapse = ' ')
-#   mutate_at("Genre", strsplit," ")%>%
-#   mutate_at("Genre", unlist)%>%
-#   mutate_at("Genre", ~sub(",$",  "", .))
-#   mutate_at("Genre", tally)
+mat <- read.csv('src/data/mat.csv',row.names = 1)
+genre <- data.frame("N" = colSums(mat))
   
   
 wordcloud(words = as.character(genre$Genre), freq = genre$N, min.freq = 1,
@@ -85,6 +80,7 @@ wordcloud(words = as.character(genre$Genre), freq = genre$N, min.freq = 1,
 
 
 #  Home Page {data-orientation=rows}     
+
 Row 
 -------------------------------------
 
@@ -96,6 +92,7 @@ tags$img(
 ```
 
 ### ValBox {data-height=800}
+
 ```{r}
 fixedPage(
   
@@ -249,7 +246,7 @@ bar + coord_polar()
 
 # Analysis {data-orientation=rows}
 
-##Input {.sidebar}
+## Input {.sidebar}
 
 ```{r echo=FALSE}
 radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4))
