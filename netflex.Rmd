@@ -7,7 +7,7 @@ output:
     logo: 
     source_code: embed
     theme: spacelab
-    css: bootstrap.css
+    css: netflex_project.css
     social: [ "github","menu" ]
     vertical_layout: scroll
 ---
