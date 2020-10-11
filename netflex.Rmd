@@ -3,7 +3,7 @@ title: "NETFLEX"
 runtime: shiny
 output:
   flexdashboard::flex_dashboard:
-    favicon: "flavicon.jpeg"
+    favicon: "src/flavicon.jpeg"
     logo: 
     source_code: embed
     theme: spacelab
@@ -57,7 +57,7 @@ library(wordcloud)
 
 
 ```{r global, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-dat <- read.csv("src/data/netflex4.csv")
+dat <- read.csv("src/data/netflex5.csv")
 # countriesborders <- readOGR("/src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
 dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
 dat$Genre[is.na(dat$Genre)] <- 'undefined'
