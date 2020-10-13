@@ -6,7 +6,7 @@ output:
     favicon: "flavicon.jpeg"
     source_code: embed
     theme: spacelab
-    css: css_relief.css
+    css: netflex-lightened.css
     social: "menu" 
     vertical_layout: fill
 ---
@@ -21,7 +21,6 @@ library(shinyBS)
 library(shinyLP)
 library(shinycssloaders)
 library(shinybusy)
-library(shinyjs)
 library(flexdashboard)
 library(leaflet)
 library(viridis)
@@ -29,7 +28,8 @@ library(shinyWidgets)
 library(waiter)
 library(hrbrthemes)
 library(htmltools)
-library(tidyverse)
+library(tidyr)
+library(dplyr)
 library(FactoMineR)
 library(factoextra)
 library(GGally)
@@ -52,7 +52,7 @@ library(vov)
 
 ```{r global, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 dat <- read.csv("src/data/netflex5.csv")
-countriesborders <- readOGR("/src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
+countriesborders <- readOGR("src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
 dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
 dat$Genre[is.na(dat$Genre)] <- 'undefined'
 genre <- paste(unlist(dat$Genre), collapse=' ')%>%
@@ -61,8 +61,6 @@ genre <- paste(unlist(dat$Genre), collapse=' ')%>%
   sub(",$",  "", .)%>%
   unique()
 mat <- read.csv('src/data/mat.csv',row.names = 1, encoding = "utf8")
-genres <- data.frame("Count" = colSums(mat))
-
 ```
 
 #  Home Page {data-orientation=rows}     
@@ -75,7 +73,7 @@ add_busy_bar(timeout = 400, color = "#c7636a", centered = FALSE, height = "6px")
 
 
 tags$img(
-     src = "bckgrnd0.jpeg",
+     src = "src/bckgrnd0.jpeg",
      style = 'position: fixed'
    )
 ```
@@ -166,7 +164,7 @@ Row
 
 ```{r echo=FALSE}
 selectInput("profile", "Choose profile", choices = c("All",unique(dat$Profile)), selected = "All")
-radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4), selected = "All time")
+radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4), selected = 1)
 ```
 
 ## Column {.tabset}
@@ -174,8 +172,17 @@ radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Month
 
 ```{r}
 
+genres <- reactive({
+  if (input$profile != "All") {
+    genres <- data.frame(t(mat[input$profile,]))
+    colnames(genres) <- "Count"
+  } else {
+    genres <- data.frame("Count" = colSums(mat))
+  }
+})
+
 renderPlot({
-  wordcloud(words = as.character(genres$Genre), freq = genre$Count, min.freq = 1, max.words=25, random.order=FALSE, rot.per=0.35,
+  wordcloud(words = as.character(rownames(genres())), freq = genres()$Count, min.freq = 1, max.words=25, random.order=FALSE, rot.per=0.35,
             colors=brewer.pal(8, "Dark2"))
 })
 ```
@@ -190,6 +197,7 @@ dat_p <- reactive({
     dat_p <- dat
   }
 })
+
 output$dygraphAllTime <- renderDygraph({
         dat_d <- dat_p()[,c("Show_type", "Start_time")] %>%
             mutate(Date = as.Date(Start_time))%>%
@@ -265,25 +273,32 @@ uiOutput("graph1")
 
 
 ### Mapping
-```{r}
+```{r map1, eval=FALSE, include=FALSE}
 # Mapping
 names(countriesborders@data)[5] <- "Country"
 Countries <- unique(dat$Country)
 mySHPdata <- countriesborders[countriesborders$Country %in% Countries,]
-newdf <- merge(mySHPdata, dat, by="Country",duplicateGeoms = TRUE)
+newdf <- merge(mySHPdata, dat[,c("Country","Account")], by="Country",duplicateGeoms = TRUE) #A opti
 AutreSHP <- countriesborders[!countriesborders$Country %in% Countries,]%>%
-            merge(dat,  by="Country",duplicateGeoms = TRUE )
+            merge(dat[,c("Country","Account")], by="Country",duplicateGeoms = TRUE )
 
 ```
 
 
-```{r}
+```{r map2, eval=FALSE, include=FALSE}
 # # Leaflet map
+
 options(viewer = NULL)
 
 renderLeaflet({
+  newdfx <- newdf
+  if (input$profile != "All") {
+     newdfx <- newdf[newdf$Account==input$profile,]
+
+  } else {
+      newdfx <- newdf
+  }
 # Color palette
-newdfx <- newdf[newdf$Account==as.character(input$profile),]
 factpal2 <- colorFactor(viridis(2), newdfx@data$Country, reverse = T)
 
 
@@ -320,6 +335,7 @@ materialSwitch(inputId = "leaveVal", label = "Drop Valentin!", status = "warning
 
 Row {.tabset}
 -------------------------------------
+
 ### Balloon
 ```{r}
 reactive_df <- reactive({
