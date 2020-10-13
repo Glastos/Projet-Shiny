@@ -2885,3 +2885,7 @@ button.close {
 .jumbotron h6 {
   color: #fff;
 }
+.dygraph-axis-label {
+  color: white;
+}
+
