@@ -3,15 +3,15 @@ title: "NETFLEX"
 runtime: shiny
 output:
   flexdashboard::flex_dashboard:
-    favicon: "src/flavicon.jpeg"
+    favicon: "flavicon.jpeg"
     source_code: embed
     theme: spacelab
-    css: netflex_project.css
-    social: [ "github","menu" ]
+    css: css_relief.css
+    social: "menu" 
     vertical_layout: fill
 ---
 ```{r setup, include=FALSE}
-suppressPackageStartupMessages({
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 library(shiny)
 library(shinythemes)
 library(shinydashboard)
@@ -29,55 +29,41 @@ library(shinyWidgets)
 library(waiter)
 library(hrbrthemes)
 library(htmltools)
-library(readxl)
+library(tidyverse)
 library(FactoMineR)
 library(factoextra)
 library(GGally)
-library(randomForest)
-library(corrplot)
-library(gganimate)
 library(rgdal)
 library(sp)
 library(rgeos)
 library(scales)
-library(caret)
-library(e1071)
 library(data.table)
 library(DT)
 library(dygraphs)
 library(plotly)
 library(xts)
-library(tidyr)
-library(dplyr)
 library(magrittr)
+library(ggridges)
+library(gplots)
 library(wordcloud)
-})
+library(vov)
 ```
 
 
 ```{r global, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-dat <- read.csv("src/data/netflex5.csv", encoding = "utf8")
-# countriesborders <- readOGR("/src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
+dat <- read.csv("src/data/netflex5.csv")
+countriesborders <- readOGR("/src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
 dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
 dat$Genre[is.na(dat$Genre)] <- 'undefined'
-
 genre <- paste(unlist(dat$Genre), collapse=' ')%>%
   strsplit(" ")%>%
   unlist()%>%
   sub(",$",  "", .)%>%
   unique()
-
 mat <- read.csv('src/data/mat.csv',row.names = 1, encoding = "utf8")
-genre <- data.frame("N" = colSums(mat))
-  
-  
-wordcloud(words = as.character(genre$Genre), freq = genre$N, min.freq = 1,
-          max.words=25, random.order=FALSE, rot.per=0.35, 
-          colors=brewer.pal(8, "Dark2"))
-
+genres <- data.frame("Count" = colSums(mat))
 
 ```
-
 
 #  Home Page {data-orientation=rows}     
 
@@ -85,8 +71,11 @@ Row
 -------------------------------------
 
 ```{r}
+add_busy_bar(timeout = 400, color = "#c7636a", centered = FALSE, height = "6px")
+
+
 tags$img(
-     src = "src/bckgrnd0.jpeg",
+     src = "bckgrnd0.jpeg",
      style = 'position: fixed'
    )
 ```
@@ -94,9 +83,23 @@ tags$img(
 ### ValBox {data-height=800}
 
 ```{r}
-fixedPage(
+my_jumbotron <- function(header , content, button = TRUE, button_link, ...){
   
-jumbotron("Welcome to NETFLEX", "Please call attention to important application features", button =  "True", button_Label = "See Documentation")
+  button_label = c(...)
+  if (button){
+    div(class = "jumbotron",
+        h1(header), p(content), p(a(href = button_link ,target="_blank",
+        class = "btn btn-primary btn-lg button", role= 'button', button_label)))
+} else {
+    div(class = "jumbotron", h1(header), p(content))
+}
+  
+}
+
+fixedPage(
+use_vov(),
+    fade_in_up(
+my_jumbotron(header="Welcome to NETFLEX", content="Please call attention to important features of the app", button =  "True", button_link="https://github.com/Glastos/Projet-Shiny", button_Label = "Check our repo'"))
 
 )
 ```
@@ -108,37 +111,51 @@ Row {data-height=150}
 Row 
 -------------------------------------
 ```{r}
-
-
 ```
 
 ### Profiles
 ```{r}
 renderValueBox({
 
-valueBox(tags$p(length(unique(dat$Profile)),
-                style = "font-size: 200%; color:	#FFFFFF;"), tags$q("Netflix Profiles",style = "font-size:                   150%; color:	#FFFFFF;") ,  color = "green", icon ="fa-users")
-})
+valueBox(
+                tags$p(length(unique(dat$Profile)),
+                style = "font-size: 200%; color:	#FFFFFF;"),
+                tags$q("Netflix Profiles",style = "font-size: 150%; color:	#FFFFFF;"),
+                icon ="fa-users",color = "green")
 
+})
 ```
 
 
 ### Movies seen
 ```{r}
 renderValueBox({
+  
+valueBox(
+                tags$p(table(dat$Show_type=="movie")[2],
+                style = "font-size: 200%; color:	#FFFFFF;"),
+                tags$q("Movies seen",style = "font-size:150%; color:	#FFFFFF;"),
+                icon ="fa-video", color = "orange")
 
-
-valueBox(tags$p(table(dat$Show_type=="movie")[2],
-                style = "font-size: 200%; color:	#FFFFFF;"), tags$q("Movies seen",style = "font-size:                   150%; color:	#FFFFFF;") ,  color = "orange", icon ="fa-video")
 })
 ```
 
 ### Series seen
 ```{r}
 renderValueBox({
-valueBox(tags$p(table(dat$Show_type=="series")[2],
-                style = "font-size: 200%; color:	#FFFFFF;"), tags$q("Series seen",style = "font-size:                   150%; color:	#FFFFFF;") ,  color = "red", icon ="fa-film")
-})
+  
+valueBox(
+                tags$p(table(dat$Show_type=="series")[2],
+                style = "font-size: 200%; color:#FFFFFF;"),
+                tags$q("Series seen",style = "font-size: 150%; color:	#FFFFFF;"),
+                icon ="fa-film", color="red")
+
+  })
+```
+
+Row
+-------------------------------------
+```{r}
 ```
 
 
@@ -149,11 +166,21 @@ valueBox(tags$p(table(dat$Show_type=="series")[2],
 
 ```{r echo=FALSE}
 selectInput("profile", "Choose profile", choices = c("All",unique(dat$Profile)), selected = "All")
-
 radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4), selected = "All time")
 ```
 
-## Visu
+## Column {.tabset}
+### Worldcloud
+
+```{r}
+
+renderPlot({
+  wordcloud(words = as.character(genres$Genre), freq = genre$Count, min.freq = 1, max.words=25, random.order=FALSE, rot.per=0.35,
+            colors=brewer.pal(8, "Dark2"))
+})
+```
+
+### Visu
 
 ```{r echo=FALSE}
 dat_p <- reactive({
@@ -163,8 +190,6 @@ dat_p <- reactive({
     dat_p <- dat
   }
 })
-
-
 output$dygraphAllTime <- renderDygraph({
         dat_d <- dat_p()[,c("Show_type", "Start_time")] %>%
             mutate(Date = as.Date(Start_time))%>%
@@ -176,9 +201,10 @@ output$dygraphAllTime <- renderDygraph({
         dygraph(dat_t)%>%
             dyRangeSelector(dateWindow = c(min(dat_p()$Start_time), max(dat_p()$Start_time)))
     })
+```
 
+```{r echo=FALSE}
 output$plotYearly <- renderPlotly({
-
         dat_d <- dat_p()[,c("Show_type", "Month")] %>%
             group_by(Month, Show_type)%>%
             tally()%>%
@@ -190,9 +216,10 @@ output$plotYearly <- renderPlotly({
           add_trace(y = ~undefined, name = 'Undefined')%>%
           layout(yaxis = list(title = 'Count'), barmode = 'group')
     })
+```
 
+```{r echo=FALSE}
 output$plotWeekly <- renderPlotly({
-
         dat_d <- dat_p()[,c("Show_type", "Day")] %>%
             group_by(Day, Show_type)%>%
             tally()%>%
@@ -204,26 +231,24 @@ output$plotWeekly <- renderPlotly({
           add_trace(y = ~undefined, name = 'Undefined')%>%
           layout(yaxis = list(title = 'Count'), barmode = 'group')
     })
+```
 
+```{r echo=FALSE}
 
 output$plotHourly <- renderPlotly({
-
         dat_d <- dat_p()[,c("Show_type", "Hours")] %>%
             group_by(Hours, Show_type)%>%
             tally()%>%
             pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
-
         plot_ly(dat_d, x = ~Hours, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
           add_trace(y = ~series, name = 'Series')%>%
           add_trace(y = ~undefined, name = 'Undefined')%>%
           layout(yaxis = list(title = 'Count'), barmode = 'group')
     })
+```
 
-
-
-
-
+```{r echo=FALSE}
 output$graph1 <- renderUI({
   if (input$time_range_1 == 1) {
     dygraphOutput("dygraphAllTime")
@@ -235,35 +260,144 @@ output$graph1 <- renderUI({
         plotlyOutput("plotHourly")
   }
 })
-
 uiOutput("graph1")
 ```
 
 
+### Mapping
+```{r}
+# Mapping
+names(countriesborders@data)[5] <- "Country"
+Countries <- unique(dat$Country)
+mySHPdata <- countriesborders[countriesborders$Country %in% Countries,]
+newdf <- merge(mySHPdata, dat, by="Country",duplicateGeoms = TRUE)
+AutreSHP <- countriesborders[!countriesborders$Country %in% Countries,]%>%
+            merge(dat,  by="Country",duplicateGeoms = TRUE )
+
+```
+
+
+```{r}
+# # Leaflet map
+options(viewer = NULL)
+
+renderLeaflet({
+# Color palette
+newdfx <- newdf[newdf$Account==as.character(input$profile),]
+factpal2 <- colorFactor(viridis(2), newdfx@data$Country, reverse = T)
+
+
+  leaflet()%>%
+  addProviderTiles(providers$CartoDB.DarkMatterNoLabels,
+                     options = providerTileOptions(noWrap = TRUE)) %>%
+  setView(1, 15, 2.5) %>%
+  addPolygons(data=newdfx,
+              stroke=TRUE,
+              fillColor = ~factpal2(newdfx@data$Country),
+              color = "black",
+              weight = 0.5, smoothFactor = 0.5,
+              opacity = 1.0, fillOpacity = 0.5,
+              label = newdfx@data$Profile) %>%
+  addPolygons(data=AutreSHP,
+              fillColor = "black",
+              color = "black",
+              weight = 0.2, smoothFactor = 0.5,
+              opacity = 0.5, fillOpacity = 0.8) %>%
+  leaflet::addLegend(pal=factpal2, values=newdfx@data$Country, opacity=1)
+})
+
+```
+
 
 # Analysis {data-orientation=rows}
 
-## Input {.sidebar}
+##Input {.sidebar}
 
 ```{r echo=FALSE}
-radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4))
+br()
+materialSwitch(inputId = "leaveVal", label = "Drop Valentin!", status = "warning")
 ```
 
 Row {.tabset}
 -------------------------------------
-### 1ghjk
+### Balloon
 ```{r}
+reactive_df <- reactive({
 
+          if (input$leaveVal){
+            return(genres[-26,-c(3,25)])
+          } else {
+            return(genres[,-c(3,25)])}
+})
+
+renderPlot({
+  dt <- as.table(as.matrix(reactive_df()[,-c(23:28)]))
+
+  balloonplot(t(dt), main = "Most seen genres",
+              xlab = "", ylab = "",
+              dotsize = 4, dotcolor = "#E50914",
+              label = FALSE, show.margins = FALSE,repel = TRUE)
+})
 ```
 
-### 1ghjk
-```{r}
+### MCA
 
+```{r}
+renderPlot({
+  res.ca <- CA(reactive_df(), graph=F)
+  fviz_ca_biplot(res.ca, repel = TRUE)
+})
 ```
 
-### 1ghjk
+### Biplot_col
+```{r}
+renderPlot({
+  res.ca <- CA(reactive_df(), graph=F)
+  fviz_ca_col(res.ca, col.col = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE)
+})
+```
+
+### Biplot_row
+```{r}
+renderPlot({
+  res.ca <- CA(reactive_df(), graph=F)
+  fviz_ca_row(res.ca, col.row = "cos2",
+               gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
+               repel = TRUE)
+})
+```
+
+
+### HCPC
 ```{r}
 
+renderPlot({
+  res.ca <- CA(reactive_df(), graph=F)
+  res.hcpc <- HCPC(res.ca, graph = F)
+  fviz_dend(res.hcpc,
+            cex = 0.7,
+            palette = "jco",
+            rect = TRUE, rect_fill = TRUE,
+            rect_border = "jco",
+            labels_track_height = 0.8,
+            show_labels = TRUE,
+            color_labels_by_k=T)
+
+})
+```
+
+### Clusters
+```{r}
+renderPlot({
+    res.ca <- CA(reactive_df(), graph=F)
+    res.hcpc <- HCPC(res.ca, graph = F)
+    fviz_cluster(res.hcpc, frame.type = "norm",
+            frame.level = 0.68,outlier.color = "black",
+            repel=T, show.clust.cent=TRUE,
+            ggtheme = theme_bw())
+})
 ```
 
 
@@ -290,5 +424,3 @@ tags$style(HTML("
 renderDataTable({DT::datatable(dat[,-1], options = list(scrollX = TRUE,
                  sScrollY = '75vh', scrollCollapse = TRUE), extensions = list("Scroller"))})
 ```
-
-
