@@ -56,7 +56,7 @@ library(wordcloud)
 
 
 ```{r global, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-dat <- read.csv("src/data/netflex5.csv")
+dat <- read.csv("src/data/netflex5.csv", encoding = "utf8")
 # countriesborders <- readOGR("/src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
 dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
 dat$Genre[is.na(dat$Genre)] <- 'undefined'
