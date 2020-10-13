@@ -4,12 +4,11 @@ runtime: shiny
 output:
   flexdashboard::flex_dashboard:
     favicon: "src/flavicon.jpeg"
-    logo: 
     source_code: embed
     theme: spacelab
     css: netflex_project.css
     social: [ "github","menu" ]
-    vertical_layout: scroll
+    vertical_layout: fill
 ---
 ```{r setup, include=FALSE}
 suppressPackageStartupMessages({
@@ -68,13 +67,14 @@ genre <- paste(unlist(dat$Genre), collapse=' ')%>%
   sub(",$",  "", .)%>%
   unique()
 
-mat <- read.csv('src/data/mat.csv',row.names = 1)
+mat <- read.csv('src/data/mat.csv',row.names = 1, encoding = "utf8")
 genre <- data.frame("N" = colSums(mat))
   
   
 wordcloud(words = as.character(genre$Genre), freq = genre$N, min.freq = 1,
           max.words=25, random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
+
 
 ```
 
@@ -86,7 +86,7 @@ Row
 
 ```{r}
 tags$img(
-     src = "bckgrnd0.jpeg",
+     src = "src/bckgrnd0.jpeg",
      style = 'position: fixed'
    )
 ```
@@ -141,30 +141,32 @@ valueBox(tags$p(table(dat$Show_type=="series")[2],
 })
 ```
 
-Row
--------------------------------------
-```{r}
 
-```
 
-# Explanatory visualization {data-orientation=rows}
+# Explanatory visualization {data-orientation=column}
 
 ## Input {.sidebar}
 
 ```{r echo=FALSE}
-radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4))
-# selectInput("profile", "Choose profile",
-#             choices = c(dat$Profile))
+selectInput("profile", "Choose profile", choices = c("All",unique(dat$Profile)), selected = "All")
+
+radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4), selected = "All time")
 ```
 
+## Visu
 
-## Column {.tabset}
-### Global
 ```{r echo=FALSE}
+dat_p <- reactive({
+  if (input$profile != "All") {
+    dat_p <- filter(dat, Profile == input$profile)
+  } else {
+    dat_p <- dat
+  }
+})
+
 
 output$dygraphAllTime <- renderDygraph({
-
-        dat_d <- dat[,c("Show_type", "Start_time")] %>%
+        dat_d <- dat_p()[,c("Show_type", "Start_time")] %>%
             mutate(Date = as.Date(Start_time))%>%
             group_by(Date, Show_type)%>%
             tally()%>%
@@ -172,12 +174,12 @@ output$dygraphAllTime <- renderDygraph({
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
         dat_t <-  xts(dat_d[2:4], dat_d$Date)
         dygraph(dat_t)%>%
-            dyRangeSelector(dateWindow = c(min(dat$Start_time), max(dat$Start_time)))
+            dyRangeSelector(dateWindow = c(min(dat_p()$Start_time), max(dat_p()$Start_time)))
     })
 
 output$plotYearly <- renderPlotly({
 
-        dat_d <- dat[,c("Show_type", "Month")] %>%
+        dat_d <- dat_p()[,c("Show_type", "Month")] %>%
             group_by(Month, Show_type)%>%
             tally()%>%
             pivot_wider(names_from = Show_type, values_from = n)%>%
@@ -191,7 +193,7 @@ output$plotYearly <- renderPlotly({
 
 output$plotWeekly <- renderPlotly({
 
-        dat_d <- dat[,c("Show_type", "Day")] %>%
+        dat_d <- dat_p()[,c("Show_type", "Day")] %>%
             group_by(Day, Show_type)%>%
             tally()%>%
             pivot_wider(names_from = Show_type, values_from = n)%>%
@@ -206,7 +208,7 @@ output$plotWeekly <- renderPlotly({
 
 output$plotHourly <- renderPlotly({
 
-        dat_d <- dat[,c("Show_type", "Hours")] %>%
+        dat_d <- dat_p()[,c("Show_type", "Hours")] %>%
             group_by(Hours, Show_type)%>%
             tally()%>%
             pivot_wider(names_from = Show_type, values_from = n)%>%
@@ -237,12 +239,7 @@ output$graph1 <- renderUI({
 uiOutput("graph1")
 ```
 
-### Profile
-```{r}
-bar <- ggplot(dat)+
-  geom_bar(mapping = aes(x = Profile, fill = Profile)) + theme_bw()
-bar + coord_polar()
-```
+
 
 # Analysis {data-orientation=rows}
 
