@@ -2,7 +2,7 @@ library(magrittr)
 library(dplyr)
 library(tidyr)
 
-dat <- read.csv("src/data/netflex3.csv")
+dat <- read.csv("src/data/netflex5.csv")
 dat$Genre[is.na(dat$Genre)] <- 'undefined'
 
 genre <- paste(unlist(dat$Genre), collapse=' ')%>%
@@ -26,4 +26,4 @@ for (i in 1:nrow(dat)) {
   }
 }
 
-write.csv(mat, "src/mat.csv", fileEncoding = "utf8")
+write.csv(mat, "src/data/mat.csv", fileEncoding = "utf8")

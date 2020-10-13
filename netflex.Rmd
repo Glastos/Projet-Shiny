@@ -6,7 +6,7 @@ output:
     favicon: "flavicon.jpeg"
     source_code: embed
     theme: spacelab
-    css: netflex-lightened.css
+    css: "src/netflex-lightened.css"
     social: "menu" 
     vertical_layout: fill
 ---
@@ -55,11 +55,11 @@ dat <- read.csv("src/data/netflex5.csv")
 countriesborders <- readOGR("src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
 dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
 dat$Genre[is.na(dat$Genre)] <- 'undefined'
-genre <- paste(unlist(dat$Genre), collapse=' ')%>%
-  strsplit(" ")%>%
-  unlist()%>%
-  sub(",$",  "", .)%>%
-  unique()
+# genre <- paste(unlist(dat$Genre), collapse=' ')%>%
+#   strsplit(" ")%>%
+#   unlist()%>%
+#   sub(",$",  "", .)%>%
+#   unique()
 mat <- read.csv('src/data/mat.csv',row.names = 1, encoding = "utf8")
 ```
 
@@ -182,7 +182,7 @@ genres <- reactive({
 })
 
 renderPlot({
-  wordcloud(words = as.character(rownames(genres())), freq = genres()$Count, min.freq = 1, max.words=25, random.order=FALSE, rot.per=0.35,
+  wordcloud(words = as.character(colnames(mat)), freq = c(genres()[,1]), min.freq = 1, max.words=25, random.order=FALSE, rot.per=0.35,
             colors=brewer.pal(8, "Dark2"))
 })
 ```
@@ -324,26 +324,26 @@ factpal2 <- colorFactor(viridis(2), newdfx@data$Country, reverse = T)
 ```
 
 
-# Analysis {data-orientation=rows}
+# Analysis
 
-##Input {.sidebar}
+## Input {.sidebar}
 
 ```{r echo=FALSE}
 br()
 materialSwitch(inputId = "leaveVal", label = "Drop Valentin!", status = "warning")
 ```
 
-Row {.tabset}
--------------------------------------
+## Column {.tabset}
+
 
 ### Balloon
 ```{r}
 reactive_df <- reactive({
 
           if (input$leaveVal){
-            return(genres[-26,-c(3,25)])
+            return(mat[-26,-c(3,25)])
           } else {
-            return(genres[,-c(3,25)])}
+            return(mat[,-c(3,25)])}
 })
 
 renderPlot({
