@@ -3,10 +3,10 @@ title: "NETFLEX"
 runtime: shiny
 output:
   flexdashboard::flex_dashboard:
-    favicon: "flavicon.jpeg"
+    favicon: "src/flavicon.jpeg"
     source_code: embed
     theme: spacelab
-    css: "src/netflex-lightened.css"
+    css: src/netflex_lightened2.css
     social: "menu" 
     vertical_layout: fill
 ---
@@ -21,6 +21,7 @@ library(shinyBS)
 library(shinyLP)
 library(shinycssloaders)
 library(shinybusy)
+library(shinyjs)
 library(flexdashboard)
 library(leaflet)
 library(viridis)
@@ -28,8 +29,7 @@ library(shinyWidgets)
 library(waiter)
 library(hrbrthemes)
 library(htmltools)
-library(tidyr)
-library(dplyr)
+library(tidyverse)
 library(FactoMineR)
 library(factoextra)
 library(GGally)
@@ -47,6 +47,8 @@ library(ggridges)
 library(gplots)
 library(wordcloud)
 library(vov)
+library(adegraphics)
+library(sf)
 ```
 
 
@@ -55,25 +57,23 @@ dat <- read.csv("src/data/netflex5.csv")
 countriesborders <- readOGR("src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
 dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
 dat$Genre[is.na(dat$Genre)] <- 'undefined'
-# genre <- paste(unlist(dat$Genre), collapse=' ')%>%
-#   strsplit(" ")%>%
-#   unlist()%>%
-#   sub(",$",  "", .)%>%
-#   unique()
-mat <- read.csv('src/data/mat.csv',row.names = 1, encoding = "utf8")
+
+mat <- read.csv("src/data/mat.csv",row.names = 1, encoding = "utf8")
+
 ```
+
 
 #  Home Page {data-orientation=rows}     
 
 Row 
 -------------------------------------
 
-```{r}
+```{r} 
 add_busy_bar(timeout = 400, color = "#c7636a", centered = FALSE, height = "6px")
-
+ 
 
 tags$img(
-     src = "src/bckgrnd0.jpeg",
+     src = "src/bckgrnd0.jpeg", 
      style = 'position: fixed'
    )
 ```
@@ -163,33 +163,16 @@ Row
 ## Input {.sidebar}
 
 ```{r echo=FALSE}
-selectInput("profile", "Choose profile", choices = c("All",unique(dat$Profile)), selected = "All")
+selectInput("profile", "Choose profile", choices = c("All",unique(dat$Profile)), selected = "All") 
+
 radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4), selected = 1)
 ```
 
 ## Column {.tabset}
-### Worldcloud
-
-```{r}
-
-genres <- reactive({
-  if (input$profile != "All") {
-    genres <- data.frame(t(mat[input$profile,]))
-    colnames(genres) <- "Count"
-  } else {
-    genres <- data.frame("Count" = colSums(mat))
-  }
-})
-
-renderPlot({
-  wordcloud(words = as.character(colnames(mat)), freq = c(genres()[,1]), min.freq = 1, max.words=25, random.order=FALSE, rot.per=0.35,
-            colors=brewer.pal(8, "Dark2"))
-})
-```
 
 ### Visu
 
-```{r echo=FALSE}
+```{r echo=FALSE} 
 dat_p <- reactive({
   if (input$profile != "All") {
     dat_p <- filter(dat, Profile == input$profile)
@@ -197,7 +180,6 @@ dat_p <- reactive({
     dat_p <- dat
   }
 })
-
 output$dygraphAllTime <- renderDygraph({
         dat_d <- dat_p()[,c("Show_type", "Start_time")] %>%
             mutate(Date = as.Date(Start_time))%>%
@@ -271,71 +253,56 @@ output$graph1 <- renderUI({
 uiOutput("graph1")
 ```
 
-
-### Mapping
-```{r map1, eval=FALSE, include=FALSE}
-# Mapping
-names(countriesborders@data)[5] <- "Country"
-Countries <- unique(dat$Country)
-mySHPdata <- countriesborders[countriesborders$Country %in% Countries,]
-newdf <- merge(mySHPdata, dat[,c("Country","Account")], by="Country",duplicateGeoms = TRUE) #A opti
-AutreSHP <- countriesborders[!countriesborders$Country %in% Countries,]%>%
-            merge(dat[,c("Country","Account")], by="Country",duplicateGeoms = TRUE )
+### Top watched
+```{r}
+###### To be finished 
+# freqfunc <- function(x, n){
+#   tail(
+#          sort(table(
+#            unlist(strsplit(as.character(x), ", "))
+#            )), n)
+# }
+# 
+# x <-  freqfunc(dat[Profile=="Ibra",]$Title, 5)
+# as.character(input$profile)
 
 ```
 
+### Worldcloud
 
-```{r map2, eval=FALSE, include=FALSE}
-# # Leaflet map
-
-options(viewer = NULL)
-
-renderLeaflet({
-  newdfx <- newdf
-  if (input$profile != "All") {
-     newdfx <- newdf[newdf$Account==input$profile,]
-
+```{r} 
+genres <- reactive({
+  if (input$profile != "All") {  
+    genres <- data.frame(t(mat["Ibra",])) 
+    colnames(genres) <- "Count"
+    genres <- tibble::rownames_to_column(genres, var="Names")
+      return(genres)
   } else {
-      newdfx <- newdf
+    genres <- data.frame("Count" = colSums(mat))
+    genres <- tibble::rownames_to_column(genres, var="Names")
+      return(genres)
+
   }
-# Color palette
-factpal2 <- colorFactor(viridis(2), newdfx@data$Country, reverse = T)
+})
 
-
-  leaflet()%>%
-  addProviderTiles(providers$CartoDB.DarkMatterNoLabels,
-                     options = providerTileOptions(noWrap = TRUE)) %>%
-  setView(1, 15, 2.5) %>%
-  addPolygons(data=newdfx,
-              stroke=TRUE,
-              fillColor = ~factpal2(newdfx@data$Country),
-              color = "black",
-              weight = 0.5, smoothFactor = 0.5,
-              opacity = 1.0, fillOpacity = 0.5,
-              label = newdfx@data$Profile) %>%
-  addPolygons(data=AutreSHP,
-              fillColor = "black",
-              color = "black",
-              weight = 0.2, smoothFactor = 0.5,
-              opacity = 0.5, fillOpacity = 0.8) %>%
-  leaflet::addLegend(pal=factpal2, values=newdfx@data$Country, opacity=1)
+renderPlot({
+  wordcloud(words = as.character(colnames(mat)), freq = c(genres()[,2]), min.freq = 1, max.words=25, random.order=FALSE, rot.per=0.35,
+            colors=brewer.pal(8, "Dark2"))
 })
 
 ```
 
+# Analysis {data-orientation=rows}
 
-# Analysis
-
-## Input {.sidebar}
+##Input {.sidebar}
 
 ```{r echo=FALSE}
 br()
 materialSwitch(inputId = "leaveVal", label = "Drop Valentin!", status = "warning")
 ```
 
-## Column {.tabset}
-
-
+Row {.tabset}
+-------------------------------------
 ### Balloon
 ```{r}
 reactive_df <- reactive({
@@ -353,10 +320,11 @@ renderPlot({
               xlab = "", ylab = "",
               dotsize = 4, dotcolor = "#E50914",
               label = FALSE, show.margins = FALSE,repel = TRUE)
+
 })
 ```
 
-### MCA
+### CA Biplot  
 
 ```{r}
 renderPlot({
@@ -392,7 +360,9 @@ renderPlot({
 renderPlot({
   res.ca <- CA(reactive_df(), graph=F)
   res.hcpc <- HCPC(res.ca, graph = F)
+  
   fviz_dend(res.hcpc,
+            k=2,
             cex = 0.7,
             palette = "jco",
             rect = TRUE, rect_fill = TRUE,
@@ -414,6 +384,8 @@ renderPlot({
             repel=T, show.clust.cent=TRUE,
             ggtheme = theme_bw())
 })
+
+
 ```
 
 
@@ -440,3 +412,4 @@ tags$style(HTML("
 renderDataTable({DT::datatable(dat[,-1], options = list(scrollX = TRUE,
                  sScrollY = '75vh', scrollCollapse = TRUE), extensions = list("Scroller"))})
 ```
+
