@@ -34,6 +34,8 @@ The app is made of 4 tabs:
 
 [Ibrahima SOW](https://github.com/sow-ibrahima)
 
+![A test image](src/gif.gif)
+
 ## Licence
 
 This project is protected under the GNU General Public License v3.0.
