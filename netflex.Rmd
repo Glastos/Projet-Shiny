@@ -10,8 +10,10 @@ output:
     social: "menu" 
     vertical_layout: fill
 ---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+# Packages loading. 
 library(shiny)
 library(shinythemes)
 library(shinydashboard)
@@ -48,17 +50,22 @@ library(gplots)
 library(wordcloud)
 library(vov)
 library(adegraphics)
-library(sf)
+library(hpackedbubble)
 ```
 
 
 ```{r global, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-dat <- read.csv("src/data/netflex5.csv")
-countriesborders <- readOGR("src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
-dat$Show_type[is.na(dat$Show_type)] <- 'undefined'
-dat$Genre[is.na(dat$Genre)] <- 'undefined'
+# Data loading 
+## Main dataset 
+mydata <- read.csv("src/data/netflex5.csv")
+mydata$Show_type[is.na(mydata$Show_type)] <- 'undefined'
+mydata$Genre[is.na(mydata$Genre)] <- 'undefined'
 
+## Matrix of genres 
 mat <- read.csv("src/data/mat.csv",row.names = 1, encoding = "utf8")
+
+## Shapefile data disabled 
+# countriesborders <- readOGR("src/TM_WORLD_BORDERS_SIMPL-0.3.shp")
 
 ```
 
@@ -69,9 +76,9 @@ Row
 -------------------------------------
 
 ```{r} 
+# Busy bar for UX enhancement 
 add_busy_bar(timeout = 400, color = "#c7636a", centered = FALSE, height = "6px")
- 
-
+# Background image adding. Origin : https://hcdevilsadvocate.com/ae/2019/01/25/best-new-netflix-releases-to-binge-during-the-cold-weather/
 tags$img(
      src = "src/bckgrnd0.jpeg", 
      style = 'position: fixed'
@@ -81,6 +88,10 @@ tags$img(
 ### ValBox {data-height=800}
 
 ```{r}
+# Disclaimer : The following jumbotron function is an adpatation of Jumbotron() from the shinyLP package (Copyright holder : Jasmine Dumas // https://github.com/cran/shinyLP). We adapted it  to receive a btn link and enhanced the rendering.
+
+# Jumbotron 
+## Jumbotron function for Landing page 
 my_jumbotron <- function(header , content, button = TRUE, button_link, ...){
   
   button_label = c(...)
@@ -94,11 +105,11 @@ my_jumbotron <- function(header , content, button = TRUE, button_link, ...){
   
 }
 
+## Fixed landing page fading in, with a btn link to our github reporsitory 
 fixedPage(
 use_vov(),
     fade_in_up(
 my_jumbotron(header="Welcome to NETFLEX", content="Please call attention to important features of the app", button =  "True", button_link="https://github.com/Glastos/Projet-Shiny", button_Label = "Check our repo'"))
-
 )
 ```
 
@@ -109,14 +120,16 @@ Row {data-height=150}
 Row 
 -------------------------------------
 ```{r}
+# Empty row like this help better organize the landing page 
 ```
 
 ### Profiles
 ```{r}
+# ValueBox displaying the number of unique profiles used in our app 
 renderValueBox({
 
 valueBox(
-                tags$p(length(unique(dat$Profile)),
+                tags$p(length(unique(mydata$Profile)),
                 style = "font-size: 200%; color:	#FFFFFF;"),
                 tags$q("Netflix Profiles",style = "font-size: 150%; color:	#FFFFFF;"),
                 icon ="fa-users",color = "green")
@@ -127,10 +140,11 @@ valueBox(
 
 ### Movies seen
 ```{r}
+# ValueBox displaying the number of movies seen by profiles in our app 
 renderValueBox({
   
 valueBox(
-                tags$p(table(dat$Show_type=="movie")[2],
+                tags$p(table(mydata$Show_type=="movie")[2],
                 style = "font-size: 200%; color:	#FFFFFF;"),
                 tags$q("Movies seen",style = "font-size:150%; color:	#FFFFFF;"),
                 icon ="fa-video", color = "orange")
@@ -140,10 +154,11 @@ valueBox(
 
 ### Series seen
 ```{r}
+# ValueBox displaying the number of series seen by profiles in our app 
 renderValueBox({
   
 valueBox(
-                tags$p(table(dat$Show_type=="series")[2],
+                tags$p(table(mydata$Show_type=="series")[2],
                 style = "font-size: 200%; color:#FFFFFF;"),
                 tags$q("Series seen",style = "font-size: 150%; color:	#FFFFFF;"),
                 icon ="fa-film", color="red")
@@ -156,52 +171,54 @@ Row
 ```{r}
 ```
 
-
-
 # Explanatory visualization {data-orientation=column}
 
 ## Input {.sidebar}
 
 ```{r echo=FALSE}
-selectInput("profile", "Choose profile", choices = c("All",unique(dat$Profile)), selected = "All") 
+# This sidebar able the user to choose whether to see visualizations for all the profiles or a specific profile.  It is also possible to choose to see yearly, monthly, weekly or daily visualizations  
+selectInput("profile", "Choose a profile", choices = c("All",unique(mydata$Profile)), selected = "All")
 
 radioButtons("time_range_1", "Time range", choices = list("All time" = 1, "Monthly" = 2, "Weekly" = 3, "Daily" = 4), selected = 1)
 ```
 
 ## Column {.tabset}
 
-### Visu
+### Temporal viz 
 
 ```{r echo=FALSE} 
-dat_p <- reactive({
+## Reactively filtering the dataset 
+mydata_p <- reactive({
   if (input$profile != "All") {
-    dat_p <- filter(dat, Profile == input$profile)
+    mydata_p <- filter(mydata, Profile == input$profile)
   } else {
-    dat_p <- dat
+    mydata_p <- mydata
   }
 })
+## All time plot 
 output$dygraphAllTime <- renderDygraph({
-        dat_d <- dat_p()[,c("Show_type", "Start_time")] %>%
+        data_d <- mydata_p()[,c("Show_type", "Start_time")] %>%
             mutate(Date = as.Date(Start_time))%>%
             group_by(Date, Show_type)%>%
             tally()%>%
             pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
-        dat_t <-  xts(dat_d[2:4], dat_d$Date)
-        dygraph(dat_t)%>%
-            dyRangeSelector(dateWindow = c(min(dat_p()$Start_time), max(dat_p()$Start_time)))
+        data_t <-  xts(data_d[2:4], data_d$Date)
+        dygraph(data_t)%>%
+            dyRangeSelector(dateWindow = c(min(mydata_p()$Start_time), max(mydata_p()$Start_time)))
     })
 ```
 
 ```{r echo=FALSE}
+## Yearly plot 
 output$plotYearly <- renderPlotly({
-        dat_d <- dat_p()[,c("Show_type", "Month")] %>%
+        mydata_d <- mydata_p()[,c("Show_type", "Month")] %>%
             group_by(Month, Show_type)%>%
             tally()%>%
             pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
-        dat_d$Month <- factor(dat_d$Month, levels = month.name)
-        plot_ly(dat_d, x = ~Month, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
+        mydata_d$Month <- factor(mydata_d$Month, levels = month.name)
+        plot_ly(mydata_d, x = ~Month, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
           add_trace(y = ~series, name = 'Series')%>%
           add_trace(y = ~undefined, name = 'Undefined')%>%
           layout(yaxis = list(title = 'Count'), barmode = 'group')
@@ -209,14 +226,15 @@ output$plotYearly <- renderPlotly({
 ```
 
 ```{r echo=FALSE}
+## Montly plot 
 output$plotWeekly <- renderPlotly({
-        dat_d <- dat_p()[,c("Show_type", "Day")] %>%
+        mydata_d <- mydata_p()[,c("Show_type", "Day")] %>%
             group_by(Day, Show_type)%>%
             tally()%>%
             pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
-        dat_d$Day <- factor(dat_d$Day, levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
-        plot_ly(dat_d, x = ~Day, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
+        mydata_d$Day <- factor(mydata_d$Day, levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
+        plot_ly(mydata_d, x = ~Day, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
           add_trace(y = ~series, name = 'Series')%>%
           add_trace(y = ~undefined, name = 'Undefined')%>%
           layout(yaxis = list(title = 'Count'), barmode = 'group')
@@ -224,14 +242,14 @@ output$plotWeekly <- renderPlotly({
 ```
 
 ```{r echo=FALSE}
-
+## Daily plot 
 output$plotHourly <- renderPlotly({
-        dat_d <- dat_p()[,c("Show_type", "Hours")] %>%
+        mydata_d <- mydata_p()[,c("Show_type", "Hours")] %>%
             group_by(Hours, Show_type)%>%
             tally()%>%
             pivot_wider(names_from = Show_type, values_from = n)%>%
             mutate_at(c('movie','series','undefined'),~replace(., is.na(.), 0))
-        plot_ly(dat_d, x = ~Hours, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
+        plot_ly(mydata_d, x = ~Hours, y = ~movie, name = "Movies", type = "bar", colors = viridis_pal(option = "D")(3))%>%
           add_trace(y = ~series, name = 'Series')%>%
           add_trace(y = ~undefined, name = 'Undefined')%>%
           layout(yaxis = list(title = 'Count'), barmode = 'group')
@@ -239,6 +257,7 @@ output$plotHourly <- renderPlotly({
 ```
 
 ```{r echo=FALSE}
+## Reactive outputting  
 output$graph1 <- renderUI({
   if (input$time_range_1 == 1) {
     dygraphOutput("dygraphAllTime")
@@ -255,25 +274,40 @@ uiOutput("graph1")
 
 ### Top watched
 ```{r}
-###### To be finished 
-# freqfunc <- function(x, n){
-#   tail(
-#          sort(table(
-#            unlist(strsplit(as.character(x), ", "))
-#            )), n)
-# }
-# 
-# x <-  freqfunc(dat[Profile=="Ibra",]$Title, 5)
-# as.character(input$profile)
-
+## Top 5 most watched shows 
+freqfunc <- function(x, n){
+  tail(
+         sort(table(
+           unlist(strsplit(as.character(x), ", "))
+           )), n)
+}
+output$plotPref <- renderPlot({
+  
+    if (input$profile != "All") {  
+       freq_data <- as.data.frame(freqfunc(mydata[which(mydata$Profile==input$profile),]$Title, 5))
+    } else {
+               validate(
+    need(input$profile != "All", "Please choose a single profile."))
+    }
+      ggplot(freq_data, aes(x=Var1, y=Freq)) +
+      geom_segment( aes(xend=Var1, yend=0)) +
+      geom_point( size=4, color="orange") +
+      theme_bw() + 
+      xlab("Shows") + 
+      ylab("Count") + 
+      ggtitle(paste0("Top 5 most watched shows for ",as.character(input$profile))) +
+      theme(plot.title = element_text(hjust = 0.5))
+})
+plotOutput("plotPref")
 ```
 
 ### Worldcloud
 
 ```{r} 
+## Worldcloud of most seen genres reactive with the sidebar input 
 genres <- reactive({
   if (input$profile != "All") {  
-    genres <- data.frame(t(mat["Ibra",])) 
+    genres <- data.frame(t(mat[as.character(input$profile),])) 
     colnames(genres) <- "Count"
     genres <- tibble::rownames_to_column(genres, var="Names")
       return(genres)
@@ -292,11 +326,64 @@ renderPlot({
 
 ```
 
+### Mapping
+
+```{r}
+renderText({ 
+ (("Mapping:
+          Display a map of the world with the different countries where people have watched                 
+          NetflixNote: Mapping is not implemented in the basic version due to is huge loading time, you can see it by uncommenting the corresponding code"))
+               
+  })
+```
+
+<!-- # ```{r} -->
+<!-- # # Mapping -->
+<!-- # names(countriesborders@data)[5] <- "Country" -->
+<!-- # Countries <- unique(dat$Country) -->
+<!-- # mySHPdata <- countriesborders[countriesborders$Country %in% Countries,] -->
+<!-- # newdf <- merge(mySHPdata, dat, by="Country",duplicateGeoms = TRUE) -->
+<!-- # otherSHP <- countriesborders[!countriesborders$Country %in% Countries,]%>% -->
+<!-- #             merge(dat,  by="Country",duplicateGeoms = TRUE ) -->
+<!-- #  -->
+<!-- # ``` -->
+<!-- #  -->
+<!-- #  -->
+<!-- # ```{r} -->
+<!-- # # # Leaflet map -->
+<!-- # options(viewer = NULL) -->
+<!-- #  -->
+<!-- # renderLeaflet({ -->
+<!-- # # Color palette -->
+<!-- # newdfx <- newdf[newdf$Account==as.character(input$account),] -->
+<!-- # factpal2 <- colorFactor(viridis(2), newdfx@data$Country, reverse = T) -->
+<!-- #  -->
+<!-- #  -->
+<!-- #   leaflet()%>% -->
+<!-- #   addProviderTiles(providers$CartoDB.DarkMatterNoLabels, -->
+<!-- #                      options = providerTileOptions(noWrap = TRUE)) %>% -->
+<!-- #   setView(1, 15, 2.5) %>% -->
+<!-- #   addPolygons(data=newdfx, -->
+<!-- #               stroke=TRUE, -->
+<!-- #               fillColor = ~factpal2(newdfx@data$Country), -->
+<!-- #               color = "black", -->
+<!-- #               weight = 0.5, smoothFactor = 0.5, -->
+<!-- #               opacity = 1.0, fillOpacity = 0.5, -->
+<!-- #               label = newdfx@data$Profile) %>% -->
+<!-- #   addPolygons(data=AutreSHP, -->
+<!-- #               fillColor = "black", -->
+<!-- #               color = "black", -->
+<!-- #               weight = 0.2, smoothFactor = 0.5, -->
+<!-- #               opacity = 0.5, fillOpacity = 0.8) %>% -->
+<!-- #   leaflet::addLegend(pal=factpal2, values=newdfx@data$Country, opacity=1) -->
+<!-- # }) -->
+<!-- # ``` -->
 # Analysis {data-orientation=rows}
 
-##Input {.sidebar}
+## Input {.sidebar}
 
 ```{r echo=FALSE}
+## Sidebar for dropping a special profile from the analysis
 br()
 materialSwitch(inputId = "leaveVal", label = "Drop Valentin!", status = "warning")
 ```
@@ -305,6 +392,7 @@ Row {.tabset}
 -------------------------------------
 ### Balloon
 ```{r}
+## Reactively splitting the dataset 
 reactive_df <- reactive({
 
           if (input$leaveVal){
@@ -312,11 +400,11 @@ reactive_df <- reactive({
           } else {
             return(mat[,-c(3,25)])}
 })
-
+##Ballonplot of the contingency table for explanatory visualization
 renderPlot({
   dt <- as.table(as.matrix(reactive_df()[,-c(23:28)]))
 
-  balloonplot(t(dt), main = "Most seen genres",
+  balloonplot(t(dt), main = "Most seen genres for each profile",
               xlab = "", ylab = "",
               dotsize = 4, dotcolor = "#E50914",
               label = FALSE, show.margins = FALSE,repel = TRUE)
@@ -327,6 +415,7 @@ renderPlot({
 ### CA Biplot  
 
 ```{r}
+## CA biplot displaying 
 renderPlot({
   res.ca <- CA(reactive_df(), graph=F)
   fviz_ca_biplot(res.ca, repel = TRUE)
@@ -335,6 +424,7 @@ renderPlot({
 
 ### Biplot_col
 ```{r}
+## CA biplot displaying only genres 
 renderPlot({
   res.ca <- CA(reactive_df(), graph=F)
   fviz_ca_col(res.ca, col.col = "cos2",
@@ -345,6 +435,7 @@ renderPlot({
 
 ### Biplot_row
 ```{r}
+## CA biplot displaying only profiles 
 renderPlot({
   res.ca <- CA(reactive_df(), graph=F)
   fviz_ca_row(res.ca, col.row = "cos2",
@@ -356,7 +447,7 @@ renderPlot({
 
 ### HCPC
 ```{r}
-
+## CA biplot displaying a dendogram  
 renderPlot({
   res.ca <- CA(reactive_df(), graph=F)
   res.hcpc <- HCPC(res.ca, graph = F)
@@ -376,6 +467,7 @@ renderPlot({
 
 ### Clusters
 ```{r}
+## HCPC clusteres 
 renderPlot({
     res.ca <- CA(reactive_df(), graph=F)
     res.hcpc <- HCPC(res.ca, graph = F)
@@ -385,23 +477,26 @@ renderPlot({
             ggtheme = theme_bw())
 })
 
-
 ```
 
 
 # Data source
+Row {.tabset}
+-------------------------------------
+### Main data source 
 ```{r}
+# Main data table exploration 
 tags$style(HTML("
-                    .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+                    .mydataaTables_wrapper .mydataaTables_length, .mydataaTables_wrapper .mydataaTables_filter, .mydataaTables_wrapper .mydataaTables_info, .mydataaTables_wrapper .mydataaTables_processing, .mydataaTables_wrapper .mydataaTables_paginate, .mydataaTables_wrapper .mydataaTables_paginate .paginate_button.current:hover {
                     color: #000000; }
 
-                    .dataTables_wrapper .dataTables_paginate .paginate_button{box-sizing:border-box;display:inline-block;min-width:1.5em;padding:0.5em 1em;margin-left:2px;text-align:center;text-decoration:none !important;cursor:pointer;*cursor:hand;color:#ffffff !important;border:1px solid transparent;border-radius:2px}
+                    .mydataaTables_wrapper .mydataaTables_paginate .paginate_button{box-sizing:border-box;display:inline-block;min-width:1.5em;padding:0.5em 1em;margin-left:2px;text-align:center;text-decoration:none !important;cursor:pointer;*cursor:hand;color:#ffffff !important;border:1px solid transparent;border-radius:2px}
 
-                    .dataTables_length select {
+                    .mydataaTables_length select {
                            color: #ffffff;
                            background-color: #ffffff
                            }
-                    .dataTables_filter input {
+                    .mydataaTables_filter input {
                             color: #ffffff;
                             background-color: #ffffff}thead {
                     color: #ffffff;
@@ -409,7 +504,15 @@ tags$style(HTML("
                     color: #000000;
                     }"))
 
-renderDataTable({DT::datatable(dat[,-1], options = list(scrollX = TRUE,
+renderDataTable({DT::datatable(mydata[,-c(1,2)], options = list(scrollX = TRUE,
+                 sScrollY = '75vh', scrollCollapse = TRUE), extensions = list("Scroller"))})
+```
+
+### Genres contingency table
+
+```{r}
+# Contingency table exploration 
+renderDataTable({DT::datatable(mat, options = list(scrollX = TRUE,
                  sScrollY = '75vh', scrollCollapse = TRUE), extensions = list("Scroller"))})
 ```
 
