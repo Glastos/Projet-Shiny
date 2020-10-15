@@ -1,5 +1,9 @@
 # Netflex - A R Shiny/Flexdashboard project
 
+## App access
+
+You can access the **Netflex** application on [https://netflex.shinyapps.io/Netflex/](shinyapps.io)
+
 ## Description
 
 This project consists in the creation of a Shiny/Flexdashboard app for visualization and analysis of Netflix data made avalaible by the download of our own viewing data. 
