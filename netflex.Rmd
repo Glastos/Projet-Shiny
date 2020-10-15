@@ -255,17 +255,32 @@ uiOutput("graph1")
 
 ### Top watched
 ```{r}
-###### To be finished 
-# freqfunc <- function(x, n){
-#   tail(
-#          sort(table(
-#            unlist(strsplit(as.character(x), ", "))
-#            )), n)
-# }
-# 
-# x <-  freqfunc(dat[Profile=="Ibra",]$Title, 5)
-# as.character(input$profile)
 
+freqfunc <- function(x, n){
+  tail(
+         sort(table(
+           unlist(strsplit(as.character(x), ", "))
+           )), n)
+}
+
+output$plotPref <- renderPlot({
+  
+    if (input$profile != "All") {  
+       freq_data <- as.data.frame(freqfunc(dat[which(dat$Profile==input$profile),]$Title, 5))
+    } else {
+               validate(
+    need(input$profile != "All", "Please choose a profile."))
+    }
+
+      ggplot(freq_data, aes(x=Var1, y=Freq)) +
+      geom_segment( aes(xend=Var1, yend=0)) +
+      geom_point( size=4, color="orange") +
+      theme_bw() +
+      xlab("")
+})
+
+
+plotOutput("plotPref")
 ```
 
 ### Worldcloud
