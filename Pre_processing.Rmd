@@ -1,0 +1,170 @@
+---
+title: "Netflex"
+author: "Ibrahima SOW"
+date: "19/09/2020"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE}
+# Packages uploading
+library(tidyverse)
+library(data.table)
+library(hrbrthemes)
+library(imdbapi)
+library(jsonlite)
+library(curl)
+library(assertthat)
+library(viridis)
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Data Loading
+netflixIbrahima <- fread("guilhemNTFLX.csv")
+dim(netflixIbrahima)
+class(netflixIbrahima)
+```
+
+```{r}
+# Droping of rows with and none useful variables : 
+netflixIbrahima <- netflixIbrahima[-which(netflixIbrahima$`Supplemental Video Type`!=""), ] 
+
+netflixIbrahima[,`:=`(`Supplemental Video Type`=NULL, Attributes=NULL, 
+           Bookmark=NULL, `Latest Bookmark`=NULL)]
+
+
+# Country extraction
+for (i in 1:length(netflixIbrahima$Country)){
+    netflixIbrahima$Country[i] <- substr(netflixIbrahima$Country[i],5,as.numeric(nchar(netflixIbrahima$Country[i])-1))
+    }
+netflixIbrahima$`Profile Name`[netflixIbrahima$`Profile Name`=="Panda diabolique"] <- "Laura2"
+
+# Adding supplementary informations about the profile : Sexe
+netflixIbrahima[`Profile Name`=="Ibra", Sexe:= "Male"]
+netflixIbrahima[`Profile Name`=="Saly", Sexe:= "Female"]
+netflixIbrahima[`Profile Name`=="Alice", Sexe:= "Female"]
+netflixIbrahima[`Profile Name`=="Moussa", Sexe:= "Male"]
+
+# Title extraction 
+## Spliting function
+splitx <- function(thatdata){
+    strsplit(thatdata, "[:]")
+          }
+TitleList <- lapply(netflixIbrahima$Title, splitx)
+
+## Title - Season - Episode separtion (here we only keep the title)
+for (i in 1:length(TitleList)){
+    netflixIbrahima$Title[i] <- TitleList[[i]][[1]][1]
+        }
+table(netflixIbrahima$Title)
+```
+
+```{r}
+# Enhancing the levels of the Device type variable - We considered that if Phone appear in the description it means that it is a phone. Any other device is considered as a Laptop (we overrode Playstation, Smart TVs and son on) 
+for (i in 1:(length(netflixIbrahima$`Device Type`))){
+  
+  if(grepl("Phone", netflixIbrahima$`Device Type`[i])){
+    netflixIbrahima$`Device Type`[i] <- "CellPhone"
+  } else {
+    netflixIbrahima$`Device Type`[i] <- "Laptop" #PlayStations  overrode
+  }
+}
+
+```
+
+```{r}
+# imdb API querying
+## Building the querying function
+show_search <- function(show_name){
+  
+           dta <- find_by_title(paste(show_name), type = NULL, season = NULL, episode                         =NULL, year_of_release = NULL, plot = "short", include_tomatoes = FALSE,
+                     api_key = "d237a1e6") # Please do not use my token ^^
+           
+           if (nrow(dta)==0) {
+                 return("NA")
+               }
+           else {
+             return(dta)
+               }
+}
+
+## Creating a catch try error function to better handle weaknesses of the IMDb API  
+is_try_error <- function(x) inherits(x, "try-error")
+
+## Iteration on queries result and  assignment for nexw variables (Genre/Ration/Show_type) creation : DATA AUGMENTATION 
+for(x in 1:(length(netflixIbrahima$Title))){
+            infoss <- try(as.list(show_search(as.character(netflixIbrahima$Title[x]))))
+            
+            if (!is_try_error(infoss) & length(infoss)!=1){
+              
+                netflixIbrahima$Genre[x] <- infoss$Genre
+              
+                netflixIbrahima$Rating[x] <- mean(infoss$imdbRating)
+                    
+                netflixIbrahima$Show_type[x] <- infoss$Type
+                
+                    if (netflixIbrahima$Show_type[x]=="series"){
+                netflixIbrahima$Nb_seasons[x] <- infoss$totalSeasons}
+                     else{netflixIbrahima$Nb_seasons[x] <- NA}
+                }
+            
+            else {
+                
+                netflixIbrahima$Genre[x] <- NA
+                netflixIbrahima$Rating[x] <- NA
+                netflixIbrahima$Show_type[x] <- NA
+                netflixIbrahima$Nb_seasons[x] <- NA
+            }
+        print(x)
+}
+
+## The special case of Naruto Shippuden that is not recognized by the API. This show was way too important not to be considered in our analysis. Without this step we would have NA for a tenth of our data. 
+for (i in 1:(length(netflixIbrahima$Title))){
+  if (netflixIbrahima$Title[i]=="Naruto Shippuden"){
+
+    netflixIbrahima$Show_type[i] <- "series"
+    netflixIbrahima$Nb_seasons[i] <- "21"
+    netflixIbrahima$Rating[i] <- "8.6"
+    netflixIbrahima$Genre[i] <- "Animation"
+  }
+}
+
+```
+
+```{r}
+# Dealing with temporal variables 
+## Turning Start Time to a POSIXct variable. 
+netflixIbrahima$`Start Time` <- strptime(netflixIbrahima$`Start Time`, "%Y-%m-%d %H:%M:%S", tz = "Europe/London")
+
+## New variables (Hours, Day, Month, Year) creation from the Start Time variable and levels ordering to improve afterwards visualizations ! 
+netflixIbrahima$Day <- weekdays(netflixIbrahima$`Start Time`) %>% 
+                  factor(levels = c("Monday", "Tuesday", 
+    "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+netflixIbrahima$Month <- months(netflixIbrahima$`Start Time`) %>%
+                  factor(levels = c("January", "February", 
+                  "March", "April", "May", "June", "July", "August", "September",
+                  "October", "November", "December"))
+netflixIbrahima$Year <- format(netflixIbrahima$`Start Time`, "%Y")  %>%
+                  factor(levels = c("2017", "2018", 
+                  "2019", "2020"))
+netflixIbrahima$Hours <- as.ITime(format(netflixIbrahima$`Start Time`, sprintf("%s:00","%H")))
+
+## Variables renaming 
+names(netflixIbrahima)[1] <- "Profile"
+names(netflixIbrahima)[2] <- "Start_time"
+## Account variable creation
+netflixIbrahima$Account <- "Ibrahima"
+```
+
+
+```{r}
+# Tibble reordering
+netflixIbrahima$Start_time <- as.character(netflixIbrahima$Start_time)
+guilhem <- netflixIbrahima[,c("Account","Profile","Sexe","Title","Show_type","Genre","Rating","Nb_seasons","Start_time","Duration","Hours","Day","Month","Year","Device","Country")]
+```
+
+```{r}
+# File writing and saving into working directory 
+write.csv2(netflixIbrahima, file = "Ibrahima.csv")
+```
+
+
