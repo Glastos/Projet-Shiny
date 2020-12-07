@@ -2,7 +2,7 @@
 
 ## App access
 
-You can access the **Netflex** application on [shinyapps.io](https://netflex.shinyapps.io/Netflex/)
+You can access the **Netflex** application on [shinyapps.io](https://ibrahimasow.shinyapps.io/Netflex/)
 
 ## Description
 
